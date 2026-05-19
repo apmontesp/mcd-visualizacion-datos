@@ -339,12 +339,12 @@ render_q(4,
     "Existe alguna categoria donde la proporcion de proyectos retrasados o en planeacion "
     "es desproporcionadamente alta, senalando un problema estructural en esa area?",
     fig4,
-    "<b>Barras apiladas normalizadas:</b> Al llevar cada categoria al 100%, la comparacion de "
-    "proporciones es directa e imparcial independientemente del volumen total.<br><br>"
-    "<b>Color como semaforo:</b> El rojo (Retrasado) actua como senal de alerta dentro de la "
-    "composicion. El lector identifica la categoria mas comprometida sin realizar calculos.<br><br>"
-    "<b>Interaccion:</b> El cursor revela la participacion exacta, el numero de proyectos en ese "
-    "estado y el total de la categoria.",
+    "<b>Barras apiladas normalizadas:</b> Al llevar cada categoría al 100%, la comparación de "
+    "proporciones es directa e imparcial independientemente del volumen total de cada sector.<br><br>"
+    "<b>Color como semáforo:</b> El rojo (Retrasado) actúa como señal de alerta dentro de la "
+    "composición. El lector identifica la categoría más comprometida sin realizar cálculos.<br><br>"
+    "<b>Interacción:</b> El cursor revela la participación exacta, el número de proyectos en ese "
+    "estado y el total de la categoría.",
     "pregunta_4_composicion.py", "q4")
 
 # =============================================================================
@@ -380,12 +380,12 @@ render_q(5,
     "La distribucion geografica del presupuesto guarda coherencia con el nivel de impacto "
     "reportado, o existen regiones donde el capital invertido no se traduce en resultados de alto impacto?",
     fig5,
-    "<b>Barras agrupadas:</b> Permite comparar el volumen de inversion y su distribucion por "
-    "nivel de impacto dentro de cada region sin perder la nocion del total.<br><br>"
-    "<b>Color como senal de eficiencia:</b> El verde (Alto impacto) indica inversion eficiente; "
-    "el rojo (Bajo impacto) senala capital en riesgo.<br><br>"
-    "<b>Interaccion:</b> El cursor muestra el nivel de impacto, la region, el presupuesto exacto "
-    "y el numero de proyectos asociados.",
+    "<b>Barras agrupadas:</b> Permite comparar el volumen de inversión y su distribución por "
+    "nivel de impacto dentro de cada región sin perder la noción del total por región.<br><br>"
+    "<b>Color como señal de eficiencia:</b> El verde (Alto impacto) indica inversión eficiente; "
+    "el amarillo (Medio impacto) señala retorno parcial; el rojo (Bajo impacto) señala capital en riesgo.<br><br>"
+    "<b>Interacción:</b> El cursor muestra el nivel de impacto, la región, el presupuesto exacto "
+    "y el número de proyectos asociados.",
     "pregunta_5_region_impacto.py", "q5")
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -491,7 +491,7 @@ with ca:
     st.markdown("""
 <div class="arg-box"><b>Argumentación Visual</b><br><br>
 <b>Tamaño de burbuja:</b> Proporcional al presupuesto total del departamento. A mayor área, mayor capital comprometido.<br><br>
-<b>Color como alerta:</b> La escala azul-naranja-rojo codifica el porcentaje de proyectos retrasados. Burbujas rojas de gran tamaño identifican los "agujeros negros" financieros: alta inversión con alto retraso.<br><br>
+<b>Color como alerta:</b> La escala verde-amarillo-rojo codifica el porcentaje de proyectos retrasados, siguiendo la misma semántica de semáforo del resto de la app. Burbujas rojas de gran tamaño identifican los focos críticos: alta inversión con alto retraso.<br><br>
 <b>Interacción:</b> El cursor revela el departamento, el presupuesto exacto, el total de proyectos y la cantidad y tasa de retrasados.
 </div>""", unsafe_allow_html=True)
 st.markdown("---")
