@@ -14,12 +14,12 @@ estado_cat = (
 estado_pct = estado_cat.div(estado_cat.sum(axis=1), axis=0) * 100
 
 COLORES = {
-    "En Planeacion": "#7c3aed",
-    "En Ejecucion":  "#1d4ed8",
+    "En Planeación": "#7c3aed",
+    "En Ejecución":  "#1d4ed8",
     "Retrasado":     "#dc2626",
     "Finalizado":    "#15803d",
 }
-orden = ["En Planeacion", "En Ejecucion", "Retrasado", "Finalizado"]
+orden = ["En Planeación", "En Ejecución", "Retrasado", "Finalizado"]
 cols  = [c for c in orden if c in estado_pct.columns]
 
 fig, ax = plt.subplots(figsize=(10, 5))
