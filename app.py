@@ -15,22 +15,39 @@ st.set_page_config(page_title="Evaluación 1 – Visualización de Datos", layou
 
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { background-color: #f8fafc; }
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+    /* Fondo general blanco */
+    [data-testid="stAppViewContainer"] { background-color: #ffffff; }
+    [data-testid="stAppViewBlockContainer"] { background-color: #ffffff; }
+    .main .block-container { background-color: #ffffff; }
+    /* Sidebar claro con texto legible */
+    [data-testid="stSidebar"] { background-color: #f1f5f9; }
+    [data-testid="stSidebar"] * { color: #1e293b !important; }
+    [data-testid="stSidebar"] .stMarkdown p { color: #1e293b !important; }
+    [data-testid="stSidebar"] label { color: #1e293b !important; font-weight: 600; }
+    /* Info institucional en sidebar */
+    .inst-box {
+        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+        padding: 12px; text-align: center; margin-top: 8px;
+    }
+    .inst-univ { font-size: 0.8rem; font-weight: 800; color: #003DA5; letter-spacing: 0.04em; }
+    .inst-line { font-size: 0.72rem; color: #374151; margin-top: 2px; line-height: 1.45; }
+    .inst-sep  { border: none; border-top: 1px solid #e2e8f0; margin: 6px 0; }
+    /* Layout general */
+    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; background-color: #ffffff; }
     .section-num {
         display: inline-block; background: #111827; color: white;
         font-size: 0.72rem; font-weight: 700; border-radius: 4px;
         padding: 2px 10px; letter-spacing: 0.06em; margin-bottom: 4px;
     }
     .context-box {
-        background: #f9fafb; border-left: 3px solid #d1d5db;
+        background: #f8fafc; border-left: 3px solid #d1d5db;
         padding: 10px 14px; border-radius: 0 6px 6px 0;
-        font-size: 0.87rem; color: #374151; margin-bottom: 8px;
+        font-size: 0.87rem; color: #1e293b; margin-bottom: 8px;
     }
     .arg-box {
         background: #f0fdf4; border-left: 3px solid #16a34a;
         padding: 12px 14px; border-radius: 0 6px 6px 0;
-        font-size: 0.84rem; color: #374151; line-height: 1.55;
+        font-size: 0.84rem; color: #1e293b; line-height: 1.55;
     }
     .arg-box b { color: #15803d; }
     h2 { font-size: 1.12rem !important; margin-top: 1.4rem !important; }
@@ -57,7 +74,7 @@ def layout(title="", xt="", yt="", legend=False, h=420):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
                     font=dict(size=10), bgcolor="rgba(255,255,255,0.85)",
                     bordercolor="#e5e7eb", borderwidth=1),
-        hoverlabel=dict(bgcolor="white", bordercolor="#d1d5db", font_size=12, font_family="Arial"),
+        hoverlabel=dict(bgcolor="white", bordercolor="#d1d5db", font_size=12, font_family="Arial", font_color="#111827"),
         margin=dict(l=10, r=20, t=60, b=10), height=h,
     )
 
@@ -89,7 +106,21 @@ with st.sidebar:
     estados    = st.multiselect("Estado",             sorted(df["Estado"].unique()),            default=sorted(df["Estado"].unique()))
     impactos   = st.multiselect("Nivel de Impacto",   sorted(df["Nivel_Impacto"].unique()),     default=sorted(df["Nivel_Impacto"].unique()))
     st.markdown("---")
-    st.caption("Dataset: Proyectos Gov. Colombia\n500 proyectos · 2023-2024")
+    st.caption("Dataset: Proyectos Gov. Colombia · 500 proyectos · 2023-2024")
+    st.markdown("---")
+    st.markdown("""
+<div class="inst-box">
+    <div class="inst-univ">UNIVERSIDAD EAFIT</div>
+    <hr class="inst-sep">
+    <div class="inst-line"><b>Asignatura</b><br>Visualización de Datos<br>Maestría en Ingeniería</div>
+    <hr class="inst-sep">
+    <div class="inst-line"><b>Dataset</b><br>Proyectos Gubernamentales<br>Colombia 2023-2024</div>
+    <hr class="inst-sep">
+    <div class="inst-line"><b>Docente</b><br>Mauricio Arias Correa</div>
+    <hr class="inst-sep">
+    <div class="inst-line"><b>Estudiante</b><br>Ana Montes-Pimienta</div>
+</div>
+""", unsafe_allow_html=True)
 
 df_f = df[df["Region"].isin(regiones) & df["Categoria"].isin(categorias) &
           df["Estado"].isin(estados)   & df["Nivel_Impacto"].isin(impactos)].copy()
@@ -292,6 +323,9 @@ l5 = layout("Distribucion Regional del Presupuesto por Nivel de Impacto",
 l5["barmode"] = "group"
 l5["yaxis"]["tickprefix"] = "$"
 l5["yaxis"]["ticksuffix"] = "M"
+l5["yaxis"]["showgrid"]   = True
+l5["yaxis"]["gridcolor"]  = "#f1f5f9"
+l5["yaxis"]["gridwidth"]  = 1
 fig5.update_layout(**l5)
 
 render_q(5,
@@ -306,3 +340,111 @@ render_q(5,
     "<b>Interaccion:</b> El cursor muestra el nivel de impacto, la region, el presupuesto exacto "
     "y el numero de proyectos asociados.",
     "pregunta_5_region_impacto.py", "q5")
+
+# ════════════════════════════════════════════════════════════════════════════════
+# VISUALIZACIÓN COMPLEMENTARIA – Distribución Espacial del Riesgo y Capital
+# ════════════════════════════════════════════════════════════════════════════════
+DEPT_COORDS = {
+    "Amazonas":        (-1.44, -71.57),
+    "Antioquia":       ( 7.20, -75.34),
+    "Arauca":          ( 7.08, -70.76),
+    "Atlántico":       (10.69, -74.95),
+    "Bogotá D.C.":     ( 4.71, -74.07),
+    "Bolívar":         ( 8.67, -74.03),
+    "Boyacá":          ( 5.45, -73.36),
+    "Caquetá":         ( 0.87, -73.84),
+    "Casanare":        ( 5.34, -71.99),
+    "Cauca":           ( 2.44, -76.62),
+    "Chocó":           ( 5.69, -76.65),
+    "Cundinamarca":    ( 4.60, -74.08),
+    "La Guajira":      (11.35, -72.52),
+    "Magdalena":       (10.41, -74.41),
+    "Meta":            ( 3.50, -73.00),
+    "Nariño":          ( 1.29, -77.36),
+    "Putumayo":        ( 0.44, -75.52),
+    "Santander":       ( 6.64, -73.13),
+    "Valle del Cauca": ( 3.80, -76.51),
+}
+
+st.markdown('<div class="section-num">ANALISIS GEOESPACIAL</div>', unsafe_allow_html=True)
+st.subheader("Distribución Espacial del Riesgo y Capital por Departamento")
+st.markdown(
+    '<div class="context-box"><b>Contexto del análisis:</b> '
+    "¿Dónde se concentra geográficamente el presupuesto y qué departamentos presentan "
+    "mayor proporción de proyectos retrasados? Las burbujas de gran tamaño con alto "
+    "porcentaje de retraso revelan los focos de riesgo financiero más críticos.</div>",
+    unsafe_allow_html=True,
+)
+
+map_agg = (
+    df_f.groupby("Departamento")
+    .agg(
+        Presupuesto_M  =("Presupuesto_M", "sum"),
+        Proyectos      =("ID_Proyecto",   "count"),
+        Retrasados     =("Estado", lambda x: (x == "Retrasado").sum()),
+    )
+    .reset_index()
+)
+map_agg["pct_retrasados"] = (map_agg["Retrasados"] / map_agg["Proyectos"] * 100).round(1)
+map_agg["lat"] = map_agg["Departamento"].map(lambda d: DEPT_COORDS.get(d, (None, None))[0])
+map_agg["lon"] = map_agg["Departamento"].map(lambda d: DEPT_COORDS.get(d, (None, None))[1])
+map_agg = map_agg.dropna(subset=["lat", "lon"])
+
+fig_map = go.Figure(go.Scattermapbox(
+    lat=map_agg["lat"],
+    lon=map_agg["lon"],
+    mode="markers",
+    marker=go.scattermapbox.Marker(
+        size=map_agg["Presupuesto_M"] / map_agg["Presupuesto_M"].max() * 55 + 10,
+        color=map_agg["pct_retrasados"],
+        colorscale=[[0, "#1d4ed8"], [0.4, "#f97316"], [1, "#dc2626"]],
+        colorbar=dict(
+            title=dict(text="% Retrasados", font=dict(size=11, color="#374151")),
+            thickness=14, len=0.6,
+            tickfont=dict(size=10, color="#374151"),
+            ticksuffix="%",
+        ),
+        opacity=0.82,
+        sizemode="diameter",
+    ),
+    customdata=np.stack([
+        map_agg["Departamento"],
+        map_agg["Presupuesto_M"].round(1),
+        map_agg["Proyectos"].astype(int),
+        map_agg["Retrasados"].astype(int),
+        map_agg["pct_retrasados"],
+    ], axis=-1),
+    hovertemplate=(
+        "<b>%{customdata[0]}</b><br>"
+        "Presupuesto total: USD %{customdata[1]:.1f}M<br>"
+        "Proyectos: %{customdata[2]}<br>"
+        "Retrasados: %{customdata[3]} (%{customdata[4]:.1f}%)"
+        "<extra></extra>"
+    ),
+))
+fig_map.update_layout(
+    mapbox=dict(
+        style="carto-positron",
+        center=dict(lat=4.5, lon=-74.3),
+        zoom=4.5,
+    ),
+    paper_bgcolor="white",
+    plot_bgcolor="white",
+    margin=dict(l=0, r=0, t=10, b=0),
+    height=520,
+    font=dict(family="Arial, sans-serif", color="#374151"),
+    hoverlabel=dict(bgcolor="white", bordercolor="#d1d5db",
+                    font_size=12, font_family="Arial", font_color="#111827"),
+)
+
+cm, ca = st.columns([3, 1])
+with cm:
+    st.plotly_chart(fig_map, use_container_width=True, key="fig_map")
+with ca:
+    st.markdown("""
+<div class="arg-box"><b>Argumentación Visual</b><br><br>
+<b>Tamaño de burbuja:</b> Proporcional al presupuesto total del departamento. A mayor área, mayor capital comprometido.<br><br>
+<b>Color como alerta:</b> La escala azul-naranja-rojo codifica el porcentaje de proyectos retrasados. Burbujas rojas de gran tamaño identifican los "agujeros negros" financieros: alta inversión con alto retraso.<br><br>
+<b>Interacción:</b> El cursor revela el departamento, el presupuesto exacto, el total de proyectos y la cantidad y tasa de retrasados.
+</div>""", unsafe_allow_html=True)
+st.markdown("---")
