@@ -15,30 +15,59 @@ st.set_page_config(page_title="Evaluación 1 – Visualización de Datos", layou
 
 st.markdown("""
 <style>
-    /* Fondo general blanco */
-    [data-testid="stAppViewContainer"] { background-color: #ffffff; }
-    [data-testid="stAppViewBlockContainer"] { background-color: #ffffff; }
-    .main .block-container { background-color: #ffffff; }
-    /* Sidebar claro con texto legible */
-    [data-testid="stSidebar"] { background-color: #f1f5f9; }
+    /* ── Fondo general blanco ── */
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewBlockContainer"],
+    .main, .main .block-container { background-color: #ffffff !important; }
+
+    /* ── Títulos visibles en fondo blanco ── */
+    h1, h2, h3, h4,
+    [data-testid="stAppViewContainer"] h1,
+    [data-testid="stAppViewContainer"] h2,
+    [data-testid="stAppViewContainer"] h3,
+    .stTitle, .stSubheader { color: #111827 !important; }
+    p, li, span, label { color: #374151; }
+
+    /* ── Sidebar ── */
+    [data-testid="stSidebar"] { background-color: #f1f5f9 !important; }
     [data-testid="stSidebar"] * { color: #1e293b !important; }
-    [data-testid="stSidebar"] .stMarkdown p { color: #1e293b !important; }
-    [data-testid="stSidebar"] label { color: #1e293b !important; font-weight: 600; }
-    /* Info institucional en sidebar */
+    [data-testid="stSidebar"] label { font-weight: 600; }
+
+    /* Tags de multiselect: gris claro con texto oscuro */
+    [data-testid="stSidebar"] [data-baseweb="tag"] {
+        background-color: #e2e8f0 !important;
+        border: 1px solid #94a3b8 !important;
+        border-radius: 4px !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="tag"] span { color: #1e293b !important; }
+    [data-testid="stSidebar"] [data-baseweb="tag"] [role="presentation"] { color: #64748b !important; }
+
+    /* ── Título del proyecto en sidebar ── */
+    .sidebar-title {
+        font-size: 0.82rem; font-weight: 700; color: #111827;
+        line-height: 1.4; padding: 8px 0 4px 0; letter-spacing: 0.01em;
+    }
+
+    /* ── Info institucional ── */
     .inst-box {
         background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
-        padding: 12px; text-align: center; margin-top: 8px;
+        padding: 12px; text-align: center; margin-top: 6px;
     }
-    .inst-univ { font-size: 0.8rem; font-weight: 800; color: #003DA5; letter-spacing: 0.04em; }
-    .inst-line { font-size: 0.72rem; color: #374151; margin-top: 2px; line-height: 1.45; }
+    .inst-univ { font-size: 0.78rem; font-weight: 800; color: #003DA5 !important; letter-spacing: 0.04em; }
+    .inst-line { font-size: 0.72rem; color: #374151 !important; margin-top: 2px; line-height: 1.45; }
     .inst-sep  { border: none; border-top: 1px solid #e2e8f0; margin: 6px 0; }
-    /* Layout general */
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; background-color: #ffffff; }
+
+    /* ── Layout ── */
+    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+
+    /* ── Badge de pregunta ── */
     .section-num {
-        display: inline-block; background: #111827; color: white;
+        display: inline-block; background: #111827; color: white !important;
         font-size: 0.72rem; font-weight: 700; border-radius: 4px;
         padding: 2px 10px; letter-spacing: 0.06em; margin-bottom: 4px;
     }
+
+    /* ── Cajas de contexto y argumentación ── */
     .context-box {
         background: #f8fafc; border-left: 3px solid #d1d5db;
         padding: 10px 14px; border-radius: 0 6px 6px 0;
@@ -50,13 +79,29 @@ st.markdown("""
         font-size: 0.84rem; color: #1e293b; line-height: 1.55;
     }
     .arg-box b { color: #15803d; }
-    h2 { font-size: 1.12rem !important; margin-top: 1.4rem !important; }
+
+    /* ── Botón de descarga pequeño y secundario ── */
+    .stDownloadButton > button {
+        font-size: 0.75rem !important;
+        padding: 3px 14px !important;
+        background: transparent !important;
+        border: 1px solid #d1d5db !important;
+        color: #6b7280 !important;
+        border-radius: 4px !important;
+    }
+    .stDownloadButton > button:hover {
+        border-color: #6b7280 !important;
+        color: #374151 !important;
+    }
+
+    /* ── Ajuste de subheader ── */
+    h2 { font-size: 1.08rem !important; margin-top: 0.6rem !important; color: #111827 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Constantes de diseño ──────────────────────────────────────────────────────
 C_FOCO, C_NEUTRO, C_ALERTA = "#16a34a", "#cbd5e1", "#dc2626"
-ESTADO_COLORS  = {"En Planeacion":"#7c3aed","En Ejecución":"#1d4ed8","Retrasado":"#dc2626","Finalizado":"#15803d"}
+ESTADO_COLORS  = {"En Planeación":"#7c3aed","En Ejecución":"#1d4ed8","Retrasado":"#dc2626","Finalizado":"#15803d"}
 IMPACTO_COLORS = {"Alto":"#15803d","Medio":"#ca8a04","Bajo":"#dc2626"}
 
 def layout(title="", xt="", yt="", legend=False, h=420):
@@ -72,7 +117,7 @@ def layout(title="", xt="", yt="", legend=False, h=420):
                    zeroline=False, tickfont=dict(size=10, color="#374151")),
         showlegend=legend,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    font=dict(size=10), bgcolor="rgba(255,255,255,0.85)",
+                    font=dict(size=10, color="#1e293b"), bgcolor="rgba(255,255,255,0.9)",
                     bordercolor="#e5e7eb", borderwidth=1),
         hoverlabel=dict(bgcolor="white", bordercolor="#d1d5db", font_size=12, font_family="Arial", font_color="#111827"),
         margin=dict(l=10, r=20, t=60, b=10), height=h,
@@ -98,8 +143,10 @@ df = load_data()
 
 # ── Sidebar – Panel de Control ────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Panel de Control")
-    st.markdown("Ajusta los filtros para explorar el portafolio. Todos los análisis responden en tiempo real.")
+    st.markdown('<div class="sidebar-title">Laboratorio de Comunicación<br>Basada en Evidencia</div>', unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("**Panel de Control**")
+    st.markdown("Ajusta los filtros. Todos los análisis responden en tiempo real.")
     st.markdown("---")
     regiones   = st.multiselect("Region",            sorted(df["Region"].unique()),           default=sorted(df["Region"].unique()))
     categorias = st.multiselect("Categoria",          sorted(df["Categoria"].unique()),         default=sorted(df["Categoria"].unique()))
@@ -271,7 +318,7 @@ ec   = ec.merge(tot, on="Categoria")
 ec["pct"] = (ec["count"] / ec["total"] * 100).round(1)
 
 fig4 = go.Figure()
-for est in ["En Planeacion","En Ejecucion","Retrasado","Finalizado"]:
+for est in ["En Planeación","En Ejecución","Retrasado","Finalizado"]:
     s   = ec[ec["Estado"]==est]
     ac  = pd.DataFrame({"Categoria": sorted(df_f["Categoria"].unique())})
     s   = ac.merge(s, on="Categoria", how="left").fillna({"pct":0,"count":0,"Estado":est,"total":0})
