@@ -147,27 +147,19 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Panel de Control**")
     st.markdown("Ajusta los filtros. Todos los análisis responden en tiempo real.")
-    st.markdown("---")
     regiones   = st.multiselect("Region",            sorted(df["Region"].unique()),           default=sorted(df["Region"].unique()))
     categorias = st.multiselect("Categoria",          sorted(df["Categoria"].unique()),         default=sorted(df["Categoria"].unique()))
     estados    = st.multiselect("Estado",             sorted(df["Estado"].unique()),            default=sorted(df["Estado"].unique()))
     impactos   = st.multiselect("Nivel de Impacto",   sorted(df["Nivel_Impacto"].unique()),     default=sorted(df["Nivel_Impacto"].unique()))
     st.markdown("---")
-    st.caption("Dataset: Proyectos Gov. Colombia · 500 proyectos · 2023-2024")
+    st.markdown("**Dataset:** Proyectos Gov. Colombia · 500 proyectos · 2023-2024")
     st.markdown("---")
-    st.markdown("""
-<div class="inst-box">
-    <div class="inst-univ">UNIVERSIDAD EAFIT</div>
-    <hr class="inst-sep">
-    <div class="inst-line"><b>Asignatura</b><br>Visualización de Datos<br>Maestría en Ingeniería</div>
-    <hr class="inst-sep">
-    <div class="inst-line"><b>Dataset</b><br>Proyectos Gubernamentales<br>Colombia 2023-2024</div>
-    <hr class="inst-sep">
-    <div class="inst-line"><b>Docente</b><br>Mauricio Arias Correa</div>
-    <hr class="inst-sep">
-    <div class="inst-line"><b>Estudiante</b><br>Ana Montes-Pimienta</div>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown(
+        "UNIVERSIDAD EAFIT | Maestría en Ingeniería | Visualización de Datos  \n"
+        "---  \n"
+        "Ana Montes-Pimienta  \n"
+        "2026"
+    )
 
 df_f = df[df["Region"].isin(regiones) & df["Categoria"].isin(categorias) &
           df["Estado"].isin(estados)   & df["Nivel_Impacto"].isin(impactos)].copy()
@@ -335,9 +327,9 @@ l4["yaxis"]["ticksuffix"] = "%"
 fig4.update_layout(**l4)
 
 render_q(4,
-    "Composicion del Portafolio: Que categorias concentran mas proyectos retrasados?",
-    "Existe alguna categoria donde la proporcion de proyectos retrasados o en planeacion "
-    "es desproporcionadamente alta, senalando un problema estructural en esa area?",
+    "Composición del Portafolio: ¿Qué categorías concentran más proyectos retrasados?",
+    "¿Existe alguna categoría donde la proporción de proyectos retrasados o en planeación "
+    "es desproporcionadamente alta, señalando un problema estructural en esa área?",
     fig4,
     "<b>Barras apiladas normalizadas:</b> Al llevar cada categoría al 100%, la comparación de "
     "proporciones es directa e imparcial independientemente del volumen total de cada sector.<br><br>"
@@ -376,8 +368,8 @@ l5["yaxis"]["gridwidth"]  = 1
 fig5.update_layout(**l5)
 
 render_q(5,
-    "Capital Territorial: Que regiones combinan alta inversion con bajo impacto?",
-    "La distribucion geografica del presupuesto guarda coherencia con el nivel de impacto "
+    "Capital Territorial: ¿Qué regiones combinan alta inversión con bajo impacto?",
+    "¿La distribución geográfica del presupuesto guarda coherencia con el nivel de impacto "
     "reportado, o existen regiones donde el capital invertido no se traduce en resultados de alto impacto?",
     fig5,
     "<b>Barras agrupadas:</b> Permite comparar el volumen de inversión y su distribución por "
