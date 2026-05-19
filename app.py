@@ -74,7 +74,7 @@ def load_data():
     return df
 
 def read_code(filename):
-    p = Path(__file__).parent / "codigo" / filename
+    p = Path(__file__).parent / filename
     return p.read_text(encoding="utf-8") if p.exists() else "# Archivo no encontrado"
 
 df = load_data()
