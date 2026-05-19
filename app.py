@@ -33,18 +33,18 @@ st.markdown("""
     [data-testid="stSidebar"] * { color: #1e293b !important; }
     [data-testid="stSidebar"] label { font-weight: 600; }
 
-    /* Tags de multiselect: gris claro con texto oscuro */
+    /* Tags de multiselect: fondo blanco con borde delgado oscuro */
     [data-testid="stSidebar"] [data-baseweb="tag"] {
-        background-color: #e2e8f0 !important;
-        border: 1px solid #94a3b8 !important;
+        background-color: #ffffff !important;
+        border: 1px solid #334155 !important;
         border-radius: 4px !important;
     }
     [data-testid="stSidebar"] [data-baseweb="tag"] span { color: #1e293b !important; }
-    [data-testid="stSidebar"] [data-baseweb="tag"] [role="presentation"] { color: #64748b !important; }
+    [data-testid="stSidebar"] [data-baseweb="tag"] [role="presentation"] { color: #475569 !important; }
 
     /* ── Título del proyecto en sidebar ── */
     .sidebar-title {
-        font-size: 0.82rem; font-weight: 700; color: #111827;
+        font-size: 1.0rem; font-weight: 800; color: #111827;
         line-height: 1.4; padding: 8px 0 4px 0; letter-spacing: 0.01em;
     }
 
@@ -444,7 +444,7 @@ fig_map = go.Figure(go.Scattermapbox(
     marker=go.scattermapbox.Marker(
         size=map_agg["Presupuesto_M"] / map_agg["Presupuesto_M"].max() * 55 + 10,
         color=map_agg["pct_retrasados"],
-        colorscale=[[0, "#1d4ed8"], [0.4, "#f97316"], [1, "#dc2626"]],
+        colorscale=[[0, "#15803d"], [0.5, "#facc15"], [1, "#dc2626"]],
         colorbar=dict(
             title=dict(text="% Retrasados", font=dict(size=11, color="#374151")),
             thickness=14, len=0.6,

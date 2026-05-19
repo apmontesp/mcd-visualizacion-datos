@@ -1,11 +1,11 @@
 # Evaluación 1 – Laboratorio de Comunicación Basada en Evidencia
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://mcd-visualizacion-datos.streamlit.app/)
+
 **Asignatura:** Visualización de Datos — Maestría en Ingeniería  
 **Universidad:** EAFIT  
 **Docente:** Mauricio Arias Correa  
-**Estudiante:** Ana Montes-Pimienta  
-
-**App desplegada:** [https://mcd-visualizacion-datos.streamlit.app/](https://mcd-visualizacion-datos.streamlit.app/)
+**Estudiante:** Ana Montes-Pimienta
 
 ---
 
@@ -29,15 +29,16 @@ La app incluye un panel de filtros globales (Region, Categoria, Estado, Nivel de
 ## Estructura del repositorio
 
 ```
-app.py                          # Aplicación principal Streamlit
-dataset_evaluacion_unidad1.csv  # Dataset (fuente: docente del curso)
-requirements.txt                # Dependencias Python
+app.py                              # Aplicación principal Streamlit
+dataset_evaluacion_unidad1.csv      # Dataset (fuente: docente del curso)
+requirements.txt                    # Dependencias Python
 README.md
-pregunta_1_jerarquia.py         # Script matplotlib descargable
-pregunta_2_contraste.py
-pregunta_3_eficiencia.py
-pregunta_4_composicion.py
-pregunta_5_region_impacto.py
+codigo/
+    pregunta_1_jerarquia.py         # Script matplotlib descargable — P1
+    pregunta_2_contraste.py         # Script matplotlib descargable — P2
+    pregunta_3_eficiencia.py        # Script matplotlib descargable — P3
+    pregunta_4_composicion.py       # Script matplotlib descargable — P4
+    pregunta_5_region_impacto.py    # Script matplotlib descargable — P5
 ```
 
 ---
