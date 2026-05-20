@@ -400,72 +400,71 @@ l4b["yaxis"]["showgrid"] = False
 l4b["yaxis"]["zeroline"] = False
 fig4_base.update_layout(**l4b)
 
-# Con contraste — una sola traza con z-encoding por segmento de color.
-# Cada columna se normaliza [0,1] y se mapea a su propio tramo del colorscale,
-# evitando el problema de coloraxis compartido entre múltiples trazas Heatmap.
-ESTADO_CLRS_LIGHT = {
-    "En Planeación": "#faf5ff",
-    "En Ejecución":  "#eff6ff",
-    "Retrasado":     "#fff1f2",
-    "Finalizado":    "#f0fdf4",
-}
-ESTADO_CLRS_DARK = {
-    "En Planeación": "#7c3aed",
-    "En Ejecución":  "#1d4ed8",
-    "Retrasado":     "#dc2626",
-    "Finalizado":    "#15803d",
+# Con contraste — make_subplots: cada columna es un subplot independiente,
+# garantizando que cada colorscale sea completamente aislado.
+from plotly.subplots import make_subplots
+
+ESTADO_CS = {
+    "En Planeación": [[0.0, "#faf5ff"], [0.5, "#c084fc"], [1.0, "#7e22ce"]],
+    "En Ejecución":  [[0.0, "#dbeafe"], [0.5, "#60a5fa"], [1.0, "#1d4ed8"]],
+    "Retrasado":     [[0.0, "#fee2e2"], [0.5, "#f87171"], [1.0, "#dc2626"]],
+    "Finalizado":    [[0.0, "#dcfce7"], [0.5, "#4ade80"], [1.0, "#15803d"]],
 }
 
-n_cols4 = len(pivot.columns)
-seg4    = 1.0 / n_cols4
-eps4    = 0.0001
+estados_p  = pivot.columns.tolist()
+n_cols4    = len(estados_p)
+col_widths = [1] * n_cols4
 
-# Codificar z: columna j → rango [j*seg4, j*seg4 + seg4-2*eps4]
-z_enc4 = np.zeros((pivot.shape[0], n_cols4), dtype=float)
-for j in range(n_cols4):
-    col     = pivot.values[:, j]
-    col_max = float(col.max()) or 1.0
-    z_enc4[:, j] = j * seg4 + (col / col_max) * (seg4 - 2 * eps4)
+fig4 = make_subplots(
+    rows=1, cols=n_cols4,
+    shared_yaxes=True,
+    horizontal_spacing=0.015,
+    column_widths=col_widths,
+)
 
-# Colorscale con transiciones bruscas entre columnas
-cs4 = []
-for j, estado in enumerate(pivot.columns):
-    base  = round(j * seg4, 6)
-    light = ESTADO_CLRS_LIGHT.get(estado, "#f8fafc")
-    dark  = ESTADO_CLRS_DARK.get(estado, "#475569")
-    cs4.append([base, light])
-    cs4.append([round(min(1.0, base + seg4 - eps4), 6), dark])
+for j, estado in enumerate(estados_p):
+    col_vals  = pivot.values[:, j].astype(float)
+    col_max   = float(col_vals.max()) or 1.0
+    col_text  = [[f"{v:.1f}%"] for v in col_vals]
+    col_cnts  = [[int(pivot_count.values[i, j])] for i in range(pivot.shape[0])]
+    cs_j      = ESTADO_CS.get(estado, [[0.0, "#f8fafc"], [1.0, "#475569"]])
 
-z_text4   = [[f"{pivot.values[i, j]:.1f}%" for j in range(n_cols4)]
-             for i in range(pivot.shape[0])]
-hover_ct4 = [[int(pivot_count.values[i, j]) for j in range(n_cols4)]
-             for i in range(pivot.shape[0])]
+    fig4.add_trace(go.Heatmap(
+        z=[[v] for v in col_vals],
+        x=[estado],
+        y=pivot.index.tolist(),
+        text=col_text,
+        texttemplate="<b>%{text}</b>",
+        textfont=dict(size=11, color="#111827"),
+        colorscale=cs_j,
+        zmin=0, zmax=col_max,
+        showscale=False,
+        customdata=col_cnts,
+        hovertemplate=(
+            "<b>%{y}</b>  ·  %{x}<br>"
+            "Participación: %{text}<br>"
+            "Proyectos: %{customdata}<extra></extra>"
+        ),
+        xgap=3, ygap=3,
+    ), row=1, col=j+1)
 
-fig4 = go.Figure(go.Heatmap(
-    z=z_enc4.tolist(),
-    x=pivot.columns.tolist(),
-    y=pivot.index.tolist(),
-    text=z_text4,
-    texttemplate="<b>%{text}</b>",
-    textfont=dict(size=12, color="#111827"),
-    colorscale=cs4,
-    zmin=0.0, zmax=1.0,
-    showscale=False,
-    customdata=hover_ct4,
-    hovertemplate=(
-        "<b>%{y}</b>  ·  %{x}<br>"
-        "Participación: %{text}<br>"
-        "Proyectos: %{customdata}<extra></extra>"
-    ),
-    xgap=4, ygap=3,
-))
-
-l4 = layout("Composición del Portafolio por Estado de Ejecución (%)",
-            xt="Estado de ejecución", yt="Categoría de proyecto", h=380)
-l4["xaxis"]["showgrid"] = False
-l4["yaxis"]["showgrid"] = False
-l4["yaxis"]["zeroline"] = False
-fig4.update_layout(**l4)
+fig4.update_layout(
+    title=dict(text="Composición del Portafolio por Estado de Ejecución (%)",
+               font=dict(size=13, color="#111827", family="Arial"), x=0, xanchor="left"),
+    plot_bgcolor="white", paper_bgcolor="white",
+    font=dict(family="Arial, sans-serif", size=11, color="#374151"),
+    height=400,
+    margin=dict(l=10, r=20, t=60, b=50),
+    showlegend=False,
+    hoverlabel=dict(bgcolor="white", bordercolor="#d1d5db",
+                    font_size=12, font_family="Arial", font_color="#111827"),
+)
+fig4.update_yaxes(showgrid=False, zeroline=False,
+                  tickfont=dict(size=10, color="#374151"),
+                  title_font=dict(size=11, color="#6b7280"))
+fig4.update_xaxes(showgrid=False, showline=False,
+                  tickfont=dict(size=10, color="#6b7280"))
+fig4.update_yaxes(title_text="Categoría de proyecto", col=1)
 
 render_q(4,
     "Composición del Portafolio: ¿Qué categorías concentran más proyectos retrasados?",
@@ -664,7 +663,17 @@ cm, ca = st.columns([3, 1])
 with cm:
     st.plotly_chart(fig_map_show, use_container_width=True, key="fig_map")
 with ca:
-    st.markdown("""
+    if "contraste" not in modo_map:
+        st.markdown(
+            '<div class="arg-box"><b>Vista: Solo Datos</b><br><br>'
+            'Burbujas de tamaño y color uniformes — sin codificación semántica. '
+            'El mapa muestra la distribución geográfica de los departamentos '
+            'pero no revela ningún patrón de riesgo o capital. '
+            'Activa <b>✨ Con contraste</b> para ver cómo el tamaño y el color '
+            'transforman puntos neutros en focos de atención.</div>',
+            unsafe_allow_html=True)
+    else:
+        st.markdown("""
 <div class="arg-box"><b>Argumentación Visual</b><br><br>
 <b>Tamaño de burbuja:</b> Proporcional al presupuesto total del departamento. A mayor área, mayor capital comprometido.<br><br>
 <b>Color como alerta:</b> La escala verde-amarillo-rojo codifica el porcentaje de proyectos retrasados, siguiendo la misma semántica de semáforo del resto de la app. Burbujas rojas de gran tamaño identifican los focos críticos: alta inversión con alto retraso.<br><br>
