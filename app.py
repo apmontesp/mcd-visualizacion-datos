@@ -183,15 +183,31 @@ c4.metric("Tasa de retraso",         f"{pct_ret:.1f}%",
 st.markdown("---")
 
 # ── Helper ────────────────────────────────────────────────────────────────────
-def render_q(num, title, context, fig, arg, code_file, key):
+def render_q(num, title, context, fig, arg, code_file, key, fig_base=None):
     st.markdown(f'<div class="section-num">PREGUNTA {num}</div>', unsafe_allow_html=True)
     st.subheader(title)
     st.markdown(f'<div class="context-box"><b>Contexto del análisis:</b> {context}</div>', unsafe_allow_html=True)
+    if fig_base is not None:
+        modo = st.radio(
+            "Vista", ["📊 Solo datos", "✨ Con contraste"],
+            horizontal=True, key=f"modo_{key}", label_visibility="collapsed",
+        )
+        fig_show = fig if "contraste" in modo else fig_base
+    else:
+        fig_show, modo = fig, "✨ Con contraste"
     cf, ca = st.columns([3, 1])
     with cf:
-        st.plotly_chart(fig, use_container_width=True, key=f"fig_{key}")
+        st.plotly_chart(fig_show, use_container_width=True, key=f"fig_{key}")
     with ca:
-        st.markdown(f'<div class="arg-box"><b>Argumentación Visual</b><br><br>{arg}</div>', unsafe_allow_html=True)
+        if fig_base is not None and "contraste" not in modo:
+            st.markdown(
+                '<div class="arg-box"><b>Vista: Solo Datos</b><br><br>'
+                'Formato mínimo sin énfasis cromático, sin líneas de referencia '
+                'ni anotaciones. Activa <b>✨ Con contraste</b> para ver cómo los '
+                'principios de diseño guían la lectura hacia el mensaje clave.'
+                '</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="arg-box"><b>Argumentación Visual</b><br><br>{arg}</div>', unsafe_allow_html=True)
     st.download_button("Descargar codigo Python de esta grafica",
                        data=read_code(code_file), file_name=code_file,
                        mime="text/plain", key=f"dl_{key}")
@@ -204,6 +220,18 @@ cat = df_f.groupby("Categoria")["Presupuesto_M"].sum().sort_values(ascending=Tru
 cat["pct"]   = (cat["Presupuesto_M"] / cat["Presupuesto_M"].sum() * 100).round(1)
 cat["color"] = cat["Categoria"].apply(lambda c: C_FOCO if c == cat.iloc[-1]["Categoria"] else C_NEUTRO)
 
+# Base (solo datos, sin énfasis)
+fig1_base = go.Figure(go.Bar(
+    x=cat["Presupuesto_M"], y=cat["Categoria"], orientation="h",
+    marker_color="#94a3b8",
+    hovertemplate="<b>%{y}</b><br>USD %{x:.1f}M<extra></extra>",
+))
+l1b = layout("Presupuesto Total Asignado por Categoria de Proyecto",
+             xt="Presupuesto total (USD millones)", yt="Categoria de proyecto", h=370)
+l1b["xaxis"]["tickprefix"] = "$"; l1b["xaxis"]["ticksuffix"] = "M"
+fig1_base.update_layout(**l1b)
+
+# Con contraste
 fig1 = go.Figure(go.Bar(
     x=cat["Presupuesto_M"], y=cat["Categoria"], orientation="h",
     marker_color=cat["color"],
@@ -221,7 +249,7 @@ render_q(1, "Jerarquía de Inversión: ¿Qué categoría concentra el mayor pres
          "<b>Eficiencia:</b> Las barras horizontales son óptimas para categorías nominales. El color verde actúa como atributo pre-atentivo: dirige la atención a la categoría dominante antes de que el lector procese conscientemente los valores.<br><br>"
          "<b>Sintaxis (Gestalt):</b> La ordenación descendente crea jerarquía visual inmediata. La supresión de espinas laterales y la cuadrícula tenue maximizan el Data-to-Ink Ratio.<br><br>"
          "<b>Interacción:</b> Al pasar el cursor se despliegan el presupuesto exacto y la participación porcentual en el portafolio.",
-         "pregunta_1_jerarquia.py", "q1")
+         "pregunta_1_jerarquia.py", "q1", fig_base=fig1_base)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PREGUNTA 2 – Alertas Temporales de Retraso
@@ -234,6 +262,17 @@ mon["label"] = mon["YearMonth"].dt.strftime("%b %Y")
 umbral       = mon["pct"].mean() + mon["pct"].std()
 mon["color"] = mon["pct"].apply(lambda v: C_ALERTA if v >= umbral else C_NEUTRO)
 
+# Base (solo datos)
+fig2_base = go.Figure(go.Bar(
+    x=mon["label"], y=mon["pct"], marker_color="#94a3b8",
+    hovertemplate="<b>%{x}</b><br>Tasa de retraso: %{y:.1f}%<extra></extra>",
+))
+l2b = layout("Tasa Mensual de Proyectos Retrasados — Identificacion de Periodos Criticos",
+             xt="Mes de inicio del proyecto", yt="Porcentaje de proyectos retrasados (%)", h=400)
+l2b["yaxis"]["ticksuffix"] = "%"
+fig2_base.update_layout(**l2b)
+
+# Con contraste
 fig2 = go.Figure(go.Bar(
     x=mon["label"], y=mon["pct"], marker_color=mon["color"],
     customdata=np.stack([mon["retrasados"].astype(int), mon["total"].astype(int)], axis=-1),
@@ -254,7 +293,7 @@ render_q(2, "Alertas Temporales: ¿En qué periodos se dispara la tasa de retras
          "<b>Figura/Fondo (Gestalt):</b> Las barras grises forman el contexto histórico (fondo). Las barras rojas emergen como figura (anomalías) sin necesidad de buscarlas activamente.<br><br>"
          "<b>Umbral estadístico:</b> La línea punteada representa media + 1 desviación estándar como frontera cognitiva entre normalidad y alerta.<br><br>"
          "<b>Interacción:</b> Al pasar el cursor se despliegan la tasa exacta, los proyectos retrasados y el total de proyectos del mes.",
-         "pregunta_2_contraste.py", "q2")
+         "pregunta_2_contraste.py", "q2", fig_base=fig2_base)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PREGUNTA 3 – Eficiencia de Inversión: Presupuesto vs Población Beneficiada
@@ -262,6 +301,20 @@ render_q(2, "Alertas Temporales: ¿En qué periodos se dispara la tasa de retras
 med_p   = df_f["Presupuesto_M"].median()
 med_pob = df_f["Poblacion_Beneficiada"].median()
 
+# Base (solo datos, todos gris, sin cuadrantes)
+fig3_base = go.Figure()
+fig3_base.add_trace(go.Scatter(
+    x=df_f["Presupuesto_M"], y=df_f["Poblacion_Beneficiada"], mode="markers",
+    marker=dict(color="#94a3b8", size=7, opacity=0.72),
+    hovertemplate="USD %{x:.1f}M  ·  %{y:,.0f} personas<extra></extra>",
+))
+l3b = layout("Eficiencia de Inversion: Presupuesto Asignado vs. Poblacion Beneficiada",
+             xt="Presupuesto asignado (USD millones)", yt="Poblacion beneficiada (personas)", h=460)
+l3b["xaxis"]["tickprefix"] = "$"; l3b["xaxis"]["ticksuffix"] = "M"
+l3b["yaxis"]["tickformat"] = ",.0f"
+fig3_base.update_layout(**l3b)
+
+# Con contraste
 fig3 = go.Figure()
 fig3.add_shape(type="rect", x0=med_p, y0=0,
                x1=df_f["Presupuesto_M"].max()*1.12, y1=med_pob,
@@ -299,7 +352,7 @@ render_q(3, "Eficiencia de Inversión: ¿A mayor presupuesto, mayor alcance pobl
          "<b>Cuadrantes de riesgo:</b> Las líneas de mediana dividen el espacio en cuatro zonas. El cuadrante inferior derecho (sombreado) identifica proyectos con gasto superior al típico pero alcance poblacional inferior al esperado.<br><br>"
          "<b>Doble codificación:</b> La posición x/y comunica las dos métricas cuantitativas. El color codifica el nivel de impacto declarado, permitiendo verificar coherencia entre eficiencia e impacto reportado.<br><br>"
          "<b>Interacción:</b> El cursor revela el proyecto, departamento, categoría, estado y cifras exactas de cada punto.",
-         "pregunta_3_eficiencia.py", "q3")
+         "pregunta_3_eficiencia.py", "q3", fig_base=fig3_base)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PREGUNTA 4 – Composición del Portafolio por Estado de Ejecución
@@ -321,50 +374,60 @@ pivot_count = (
       .reindex(index=cats_order, columns=[s for s in estados_order if s in ec["Estado"].unique()], fill_value=0)
 )
 
-z_vals   = pivot.values.tolist()
-z_text   = [[f"{v:.1f}%" for v in row] for row in pivot.values]
-hover_ct = [[int(pivot_count.loc[cat, est]) if est in pivot_count.columns else 0
-             for est in pivot.columns] for cat in pivot.index]
+# Escalas de color semánticas por estado (blanco → color institucional)
+ESTADO_COLORSCALES = {
+    "En Planeación": [[0.0, "#faf5ff"], [0.4, "#c4b5fd"], [1.0, "#7c3aed"]],   # morado
+    "En Ejecución":  [[0.0, "#eff6ff"], [0.4, "#93c5fd"], [1.0, "#1d4ed8"]],   # azul
+    "Retrasado":     [[0.0, "#fff1f2"], [0.4, "#fca5a5"], [1.0, "#dc2626"]],   # rojo
+    "Finalizado":    [[0.0, "#f0fdf4"], [0.4, "#86efac"], [1.0, "#15803d"]],   # verde
+}
 
-# Colorscale por columna: normalizar cada columna entre 0 y su máximo
-import copy
-z_norm = []
-for row in pivot.values:
-    z_norm.append(list(row))
-col_max = [max(pivot.values[:, j]) or 1 for j in range(pivot.shape[1])]
-z_norm_vals = [[pivot.values[i, j] / col_max[j] for j in range(pivot.shape[1])]
-               for i in range(pivot.shape[0])]
-
-fig4 = go.Figure(go.Heatmap(
-    z=z_vals,
+# Base (escala gris uniforme, sin anotaciones)
+fig4_base = go.Figure(go.Heatmap(
+    z=pivot.values.tolist(),
     x=pivot.columns.tolist(),
     y=pivot.index.tolist(),
-    text=z_text,
-    texttemplate="<b>%{text}</b>",
-    textfont=dict(size=12, color="#111827"),
-    colorscale=[
-        [0.0,  "#f8fafc"],
-        [0.14, "#fef9c3"],
-        [0.28, "#fed7aa"],
-        [0.50, "#fca5a5"],
-        [1.0,  "#dc2626"],
-    ],
+    colorscale=[[0.0, "#f8fafc"], [1.0, "#475569"]],
     zmin=0, zmax=60,
-    showscale=True,
-    colorbar=dict(
-        title=dict(text="% proyectos", font=dict(size=11, color="#374151")),
-        thickness=12, len=0.6,
-        ticksuffix="%",
-        tickfont=dict(size=10, color="#374151"),
-    ),
-    customdata=[[hover_ct[i][j] for j in range(pivot.shape[1])] for i in range(pivot.shape[0])],
-    hovertemplate=(
-        "<b>%{y}</b>  ·  %{x}<br>"
-        "Participación: %{z:.1f}%<br>"
-        "Proyectos: %{customdata}<extra></extra>"
-    ),
+    showscale=False,
     xgap=3, ygap=3,
+    hovertemplate="<b>%{y}</b>  ·  %{x}<br>%{z:.1f}%<extra></extra>",
 ))
+l4b = layout("Composición del Portafolio por Estado de Ejecución (%)",
+             xt="Estado de ejecución", yt="Categoría de proyecto", h=380)
+l4b["xaxis"]["showgrid"] = False
+l4b["yaxis"]["showgrid"] = False
+l4b["yaxis"]["zeroline"] = False
+fig4_base.update_layout(**l4b)
+
+# Con contraste (multi-colorscale por estado)
+fig4 = go.Figure()
+for estado in pivot.columns:
+    col_vals   = pivot[estado].values
+    col_max    = float(col_vals.max()) or 1.0
+    col_text   = [[f"{v:.1f}%"] for v in col_vals]
+    col_counts = [[int(pivot_count.loc[cat, estado]) if estado in pivot_count.columns else 0]
+                  for cat in pivot.index]
+    cs = ESTADO_COLORSCALES.get(estado, [[0.0, "#f8fafc"], [1.0, "#6b7280"]])
+    fig4.add_trace(go.Heatmap(
+        z=[[v] for v in col_vals],
+        x=[estado],
+        y=pivot.index.tolist(),
+        text=col_text,
+        texttemplate="<b>%{text}</b>",
+        textfont=dict(size=12, color="#111827"),
+        colorscale=cs,
+        zmin=0,
+        zmax=col_max,
+        showscale=False,
+        customdata=col_counts,
+        hovertemplate=(
+            "<b>%{y}</b>  ·  %{x}<br>"
+            "Participación: %{z:.1f}%<br>"
+            "Proyectos: %{customdata}<extra></extra>"
+        ),
+        xgap=4, ygap=3,
+    ))
 
 l4 = layout("Composición del Portafolio por Estado de Ejecución (%)",
             xt="Estado de ejecución", yt="Categoría de proyecto", h=380)
@@ -378,14 +441,16 @@ render_q(4,
     "¿Existe alguna categoría donde la proporción de proyectos retrasados o en planeación "
     "es desproporcionadamente alta, señalando un problema estructural en esa área?",
     fig4,
-    "<b>Mapa de calor por estado:</b> Cada celda muestra el porcentaje de proyectos de esa "
-    "categoría en ese estado. La intensidad del color elimina la necesidad de decodificar "
-    "barras apiladas: rojo intenso = proporción alta, blanco = proporción baja.<br><br>"
-    "<b>Lectura por columna:</b> Comparar verticalmente la columna 'Retrasado' revela de "
-    "inmediato qué categoría concentra más retrasos sin que el resto de los estados interfieran.<br><br>"
+    "<b>Escala semántica por estado:</b> Cada columna usa su propio gradiente cromático — "
+    "morado (Planeación), azul (Ejecución), rojo (Retrasado), verde (Finalizado) — "
+    "de modo que la intensidad del color dentro de cada columna señala directamente qué "
+    "categoría concentra más proyectos en ese estado, sin interferencia visual entre columnas.<br><br>"
+    "<b>Lectura por columna:</b> La columna 'Retrasado' en rojo intenso identifica de inmediato "
+    "las categorías con mayor proporción de retrasos; la columna 'Finalizado' en verde permite "
+    "contrastar el avance sin necesidad de cambiar el marco de referencia de color.<br><br>"
     "<b>Interacción:</b> El cursor revela la participación exacta y el número de proyectos "
     "en cada combinación categoría-estado.",
-    "pregunta_4_composicion.py", "q4")
+    "pregunta_4_composicion.py", "q4", fig_base=fig4_base)
 
 # =============================================================================
 # PREGUNTA 5 - Distribucion Regional del Presupuesto por Nivel de Impacto
@@ -394,6 +459,24 @@ ri = df_f.groupby(["Region","Nivel_Impacto"]).agg(
     Presupuesto_M=("Presupuesto_M","sum"), Proyectos=("ID_Proyecto","count")
 ).reset_index()
 
+# Base (barras grises, sin diferenciación por impacto)
+ri_total = ri.groupby("Region")["Presupuesto_M"].sum().reset_index()
+ar_all = pd.DataFrame({"Region": sorted(df_f["Region"].unique())})
+ri_total = ar_all.merge(ri_total, on="Region", how="left").fillna({"Presupuesto_M": 0})
+fig5_base = go.Figure(go.Bar(
+    x=ri_total["Region"], y=ri_total["Presupuesto_M"],
+    marker_color="#94a3b8",
+    hovertemplate="<b>%{x}</b><br>USD %{y:.1f}M<extra></extra>",
+))
+l5b = layout("Distribucion Regional del Presupuesto por Nivel de Impacto",
+             xt="Region geografica", yt="Presupuesto total (USD millones)", h=420)
+l5b["yaxis"]["tickprefix"] = "$"
+l5b["yaxis"]["ticksuffix"] = "M"
+l5b["yaxis"]["showgrid"]   = True
+l5b["yaxis"]["gridcolor"]  = "#f1f5f9"
+fig5_base.update_layout(**l5b)
+
+# Con contraste
 fig5 = go.Figure()
 for nivel in ["Alto","Medio","Bajo"]:
     s  = ri[ri["Nivel_Impacto"]==nivel]
@@ -426,7 +509,7 @@ render_q(5,
     "el amarillo (Medio impacto) señala retorno parcial; el rojo (Bajo impacto) señala capital en riesgo.<br><br>"
     "<b>Interacción:</b> El cursor muestra el nivel de impacto, la región, el presupuesto exacto "
     "y el número de proyectos asociados.",
-    "pregunta_5_region_impacto.py", "q5")
+    "pregunta_5_region_impacto.py", "q5", fig_base=fig5_base)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # VISUALIZACIÓN COMPLEMENTARIA – Distribución Espacial del Riesgo y Capital
@@ -524,9 +607,31 @@ fig_map.update_layout(
                     font_size=12, font_family="Arial", font_color="#111827"),
 )
 
+# Mapa base: burbujas uniformes sin color semántico
+fig_map_base = go.Figure(go.Scattermapbox(
+    lat=map_agg["lat"], lon=map_agg["lon"], mode="markers",
+    marker=go.scattermapbox.Marker(
+        size=12, color="#94a3b8", opacity=0.72,
+        sizemode="diameter",
+    ),
+    text=map_agg["Departamento"],
+    hovertemplate="<b>%{text}</b><extra></extra>",
+))
+fig_map_base.update_layout(
+    mapbox=dict(style="carto-positron", center=dict(lat=4.5, lon=-74.3), zoom=4.5),
+    paper_bgcolor="white", margin=dict(l=0, r=0, t=10, b=0), height=520,
+    font=dict(family="Arial, sans-serif", color="#374151"),
+)
+
+modo_map = st.radio(
+    "Vista mapa", ["📊 Solo datos", "✨ Con contraste"],
+    horizontal=True, key="modo_map", label_visibility="collapsed",
+)
+fig_map_show = fig_map if "contraste" in modo_map else fig_map_base
+
 cm, ca = st.columns([3, 1])
 with cm:
-    st.plotly_chart(fig_map, use_container_width=True, key="fig_map")
+    st.plotly_chart(fig_map_show, use_container_width=True, key="fig_map")
 with ca:
     st.markdown("""
 <div class="arg-box"><b>Argumentación Visual</b><br><br>
