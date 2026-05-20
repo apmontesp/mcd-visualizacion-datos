@@ -1,5 +1,6 @@
 # Pregunta 4 - Composición del Portafolio por Estado de Ejecución
-# Mapa de calor: categorías × estados, intensidad proporcional al porcentaje
+# Mapa de calor con escala de color semántica por estado
+# (morado=Planeación, azul=Ejecución, rojo=Retrasado, verde=Finalizado)
 # Requiere: pandas, matplotlib, numpy
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,32 +24,55 @@ pivot = pivot.reindex(
     fill_value=0,
 )
 
-cmap = mcolors.LinearSegmentedColormap.from_list(
-    "custom", ["#f8fafc", "#fef9c3", "#fca5a5", "#dc2626"]
-)
+# Colormaps semánticos por estado
+ESTADO_CMAPS = {
+    "En Planeación": mcolors.LinearSegmentedColormap.from_list("plan",  ["#faf5ff", "#c4b5fd", "#7c3aed"]),
+    "En Ejecución":  mcolors.LinearSegmentedColormap.from_list("ejec",  ["#eff6ff", "#93c5fd", "#1d4ed8"]),
+    "Retrasado":     mcolors.LinearSegmentedColormap.from_list("retr",  ["#fff1f2", "#fca5a5", "#dc2626"]),
+    "Finalizado":    mcolors.LinearSegmentedColormap.from_list("final", ["#f0fdf4", "#86efac", "#15803d"]),
+}
+FALLBACK_CMAP = mcolors.LinearSegmentedColormap.from_list("fb", ["#f8fafc", "#6b7280"])
+
+n_rows, n_cols = pivot.shape
+cell_w = 1.0   # ancho de cada columna en coordenadas de imagen
+gap    = 0.06  # separación entre columnas
 
 fig, ax = plt.subplots(figsize=(10, 4.5))
 fig.patch.set_facecolor("white")
 ax.set_facecolor("white")
 
-im = ax.imshow(pivot.values, aspect="auto", cmap=cmap, vmin=0, vmax=55)
+for j, estado in enumerate(pivot.columns):
+    col_vals = pivot.values[:, j].reshape(-1, 1)
+    col_max  = float(col_vals.max()) or 1.0
+    cmap_j   = ESTADO_CMAPS.get(estado, FALLBACK_CMAP)
+    norm_j   = mcolors.Normalize(vmin=0, vmax=col_max)
 
-ax.set_xticks(range(len(pivot.columns)))
-ax.set_xticklabels(pivot.columns, fontsize=10, color="#374151")
-ax.set_yticks(range(len(pivot.index)))
-ax.set_yticklabels(pivot.index, fontsize=10, color="#374151")
+    x_left  = j * (cell_w + gap) - 0.5
+    x_right = x_left + cell_w
+    ax.imshow(
+        col_vals,
+        aspect="auto",
+        cmap=cmap_j,
+        norm=norm_j,
+        extent=[x_left, x_right, n_rows - 0.5, -0.5],
+        interpolation="nearest",
+    )
 
-for i in range(pivot.shape[0]):
-    for j in range(pivot.shape[1]):
+    for i in range(n_rows):
         v = pivot.values[i, j]
-        color = "white" if v > 35 else "#111827"
-        ax.text(j, i, f"{v:.1f}%", ha="center", va="center",
-                fontsize=10, fontweight="bold", color=color)
+        text_color = "white" if v / col_max > 0.65 else "#111827"
+        ax.text(
+            j * (cell_w + gap), i,
+            f"{v:.1f}%", ha="center", va="center",
+            fontsize=10, fontweight="bold", color=text_color,
+        )
 
-cbar = plt.colorbar(im, ax=ax, pad=0.02, fraction=0.03)
-cbar.ax.tick_params(labelsize=9)
-cbar.set_label("% proyectos", fontsize=9, color="#6b7280")
-cbar.ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0f}%"))
+x_ticks = [j * (cell_w + gap) for j in range(n_cols)]
+ax.set_xticks(x_ticks)
+ax.set_xticklabels(pivot.columns, fontsize=10, color="#374151")
+ax.set_yticks(range(n_rows))
+ax.set_yticklabels(pivot.index, fontsize=10, color="#374151")
+ax.set_xlim(-0.5 * (cell_w + gap), n_cols * (cell_w + gap) - 0.5)
 
 ax.set_title("Composición del Portafolio por Estado de Ejecución (%)",
              fontsize=13, fontweight="bold", color="#111827", pad=14)
@@ -57,10 +81,9 @@ ax.set_ylabel("Categoría de proyecto", fontsize=10, color="#6b7280")
 
 for spine in ax.spines.values():
     spine.set_visible(False)
-ax.set_xticks(np.arange(-0.5, len(pivot.columns), 1), minor=True)
-ax.set_yticks(np.arange(-0.5, len(pivot.index), 1), minor=True)
-ax.grid(which="minor", color="white", linewidth=2)
-ax.tick_params(which="minor", bottom=False, left=False)
+ax.tick_params(which="both", bottom=False, left=False)
+ax.xaxis.set_minor_locator(plt.NullLocator())
+ax.yaxis.set_minor_locator(plt.NullLocator())
 
 plt.tight_layout()
 plt.savefig("pregunta_4_composicion.png", dpi=150, bbox_inches="tight")
