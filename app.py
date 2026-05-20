@@ -309,21 +309,68 @@ tot  = df_f.groupby("Categoria").size().rename("total").reset_index()
 ec   = ec.merge(tot, on="Categoria")
 ec["pct"] = (ec["count"] / ec["total"] * 100).round(1)
 
-fig4 = go.Figure()
-for est in ["En Planeación","En Ejecución","Retrasado","Finalizado"]:
-    s   = ec[ec["Estado"]==est]
-    ac  = pd.DataFrame({"Categoria": sorted(df_f["Categoria"].unique())})
-    s   = ac.merge(s, on="Categoria", how="left").fillna({"pct":0,"count":0,"Estado":est,"total":0})
-    fig4.add_trace(go.Bar(
-        name=est, x=s["Categoria"], y=s["pct"],
-        marker_color=ESTADO_COLORS.get(est,"#94a3b8"),
-        customdata=np.stack([s["count"].astype(int), s["pct"], s["total"].astype(int)], axis=-1),
-        hovertemplate="<b>"+est+"</b>  ·  %{x}<br>Participacion: %{customdata[1]:.1f}%<br>Proyectos: %{customdata[0]}<br>Total categoria: %{customdata[2]}<extra></extra>",
-    ))
-l4 = layout("Composicion del Portafolio: Estado de Ejecucion por Categoria (%)",
-            xt="Categoria de proyecto", yt="Participacion por estado (%)", legend=True, h=420)
-l4["barmode"] = "stack"
-l4["yaxis"]["ticksuffix"] = "%"
+# Tabla pivote: categorías × estados (%)
+estados_order = ["En Planeación","En Ejecución","Retrasado","Finalizado"]
+cats_order    = sorted(df_f["Categoria"].unique())
+pivot = (
+    ec.pivot_table(index="Categoria", columns="Estado", values="pct", fill_value=0)
+      .reindex(index=cats_order, columns=[s for s in estados_order if s in ec["Estado"].unique()], fill_value=0)
+)
+pivot_count = (
+    ec.pivot_table(index="Categoria", columns="Estado", values="count", fill_value=0)
+      .reindex(index=cats_order, columns=[s for s in estados_order if s in ec["Estado"].unique()], fill_value=0)
+)
+
+z_vals   = pivot.values.tolist()
+z_text   = [[f"{v:.1f}%" for v in row] for row in pivot.values]
+hover_ct = [[int(pivot_count.loc[cat, est]) if est in pivot_count.columns else 0
+             for est in pivot.columns] for cat in pivot.index]
+
+# Colorscale por columna: normalizar cada columna entre 0 y su máximo
+import copy
+z_norm = []
+for row in pivot.values:
+    z_norm.append(list(row))
+col_max = [max(pivot.values[:, j]) or 1 for j in range(pivot.shape[1])]
+z_norm_vals = [[pivot.values[i, j] / col_max[j] for j in range(pivot.shape[1])]
+               for i in range(pivot.shape[0])]
+
+fig4 = go.Figure(go.Heatmap(
+    z=z_vals,
+    x=pivot.columns.tolist(),
+    y=pivot.index.tolist(),
+    text=z_text,
+    texttemplate="<b>%{text}</b>",
+    textfont=dict(size=12, color="#111827"),
+    colorscale=[
+        [0.0,  "#f8fafc"],
+        [0.14, "#fef9c3"],
+        [0.28, "#fed7aa"],
+        [0.50, "#fca5a5"],
+        [1.0,  "#dc2626"],
+    ],
+    zmin=0, zmax=60,
+    showscale=True,
+    colorbar=dict(
+        title=dict(text="% proyectos", font=dict(size=11, color="#374151")),
+        thickness=12, len=0.6,
+        ticksuffix="%",
+        tickfont=dict(size=10, color="#374151"),
+    ),
+    customdata=[[hover_ct[i][j] for j in range(pivot.shape[1])] for i in range(pivot.shape[0])],
+    hovertemplate=(
+        "<b>%{y}</b>  ·  %{x}<br>"
+        "Participación: %{z:.1f}%<br>"
+        "Proyectos: %{customdata}<extra></extra>"
+    ),
+    xgap=3, ygap=3,
+))
+
+l4 = layout("Composición del Portafolio por Estado de Ejecución (%)",
+            xt="Estado de ejecución", yt="Categoría de proyecto", h=380)
+l4["xaxis"]["showgrid"] = False
+l4["yaxis"]["showgrid"] = False
+l4["yaxis"]["zeroline"] = False
 fig4.update_layout(**l4)
 
 render_q(4,
@@ -331,12 +378,13 @@ render_q(4,
     "¿Existe alguna categoría donde la proporción de proyectos retrasados o en planeación "
     "es desproporcionadamente alta, señalando un problema estructural en esa área?",
     fig4,
-    "<b>Barras apiladas normalizadas:</b> Al llevar cada categoría al 100%, la comparación de "
-    "proporciones es directa e imparcial independientemente del volumen total de cada sector.<br><br>"
-    "<b>Color como semáforo:</b> El rojo (Retrasado) actúa como señal de alerta dentro de la "
-    "composición. El lector identifica la categoría más comprometida sin realizar cálculos.<br><br>"
-    "<b>Interacción:</b> El cursor revela la participación exacta, el número de proyectos en ese "
-    "estado y el total de la categoría.",
+    "<b>Mapa de calor por estado:</b> Cada celda muestra el porcentaje de proyectos de esa "
+    "categoría en ese estado. La intensidad del color elimina la necesidad de decodificar "
+    "barras apiladas: rojo intenso = proporción alta, blanco = proporción baja.<br><br>"
+    "<b>Lectura por columna:</b> Comparar verticalmente la columna 'Retrasado' revela de "
+    "inmediato qué categoría concentra más retrasos sin que el resto de los estados interfieran.<br><br>"
+    "<b>Interacción:</b> El cursor revela la participación exacta y el número de proyectos "
+    "en cada combinación categoría-estado.",
     "pregunta_4_composicion.py", "q4")
 
 # =============================================================================
