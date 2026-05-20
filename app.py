@@ -400,15 +400,19 @@ l4b["yaxis"]["showgrid"] = False
 l4b["yaxis"]["zeroline"] = False
 fig4_base.update_layout(**l4b)
 
-# Con contraste (multi-colorscale por estado)
+# Con contraste (coloraxis independiente por columna — Plotly comparte coloraxis
+# si usas colorscale por traza; la solución correcta es coloraxisN en layout)
 fig4 = go.Figure()
-for estado in pivot.columns:
+ca_layout = {}
+for j, estado in enumerate(pivot.columns):
     col_vals   = pivot[estado].values
     col_max    = float(col_vals.max()) or 1.0
     col_text   = [[f"{v:.1f}%"] for v in col_vals]
     col_counts = [[int(pivot_count.loc[cat, estado]) if estado in pivot_count.columns else 0]
                   for cat in pivot.index]
-    cs = ESTADO_COLORSCALES.get(estado, [[0.0, "#f8fafc"], [1.0, "#6b7280"]])
+    cs      = ESTADO_COLORSCALES.get(estado, [[0.0, "#f8fafc"], [1.0, "#6b7280"]])
+    ca_name = f"coloraxis{j+1}"
+    ca_layout[ca_name] = dict(colorscale=cs, cmin=0, cmax=col_max, showscale=False)
     fig4.add_trace(go.Heatmap(
         z=[[v] for v in col_vals],
         x=[estado],
@@ -416,10 +420,7 @@ for estado in pivot.columns:
         text=col_text,
         texttemplate="<b>%{text}</b>",
         textfont=dict(size=12, color="#111827"),
-        colorscale=cs,
-        zmin=0,
-        zmax=col_max,
-        showscale=False,
+        coloraxis=ca_name,
         customdata=col_counts,
         hovertemplate=(
             "<b>%{y}</b>  ·  %{x}<br>"
@@ -434,6 +435,7 @@ l4 = layout("Composición del Portafolio por Estado de Ejecución (%)",
 l4["xaxis"]["showgrid"] = False
 l4["yaxis"]["showgrid"] = False
 l4["yaxis"]["zeroline"] = False
+l4.update(ca_layout)
 fig4.update_layout(**l4)
 
 render_q(4,
