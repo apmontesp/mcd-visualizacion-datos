@@ -400,42 +400,71 @@ l4b["yaxis"]["showgrid"] = False
 l4b["yaxis"]["zeroline"] = False
 fig4_base.update_layout(**l4b)
 
-# Con contraste (coloraxis independiente por columna — Plotly comparte coloraxis
-# si usas colorscale por traza; la solución correcta es coloraxisN en layout)
-fig4 = go.Figure()
-ca_layout = {}
+# Con contraste — una sola traza con z-encoding por segmento de color.
+# Cada columna se normaliza [0,1] y se mapea a su propio tramo del colorscale,
+# evitando el problema de coloraxis compartido entre múltiples trazas Heatmap.
+ESTADO_CLRS_LIGHT = {
+    "En Planeación": "#faf5ff",
+    "En Ejecución":  "#eff6ff",
+    "Retrasado":     "#fff1f2",
+    "Finalizado":    "#f0fdf4",
+}
+ESTADO_CLRS_DARK = {
+    "En Planeación": "#7c3aed",
+    "En Ejecución":  "#1d4ed8",
+    "Retrasado":     "#dc2626",
+    "Finalizado":    "#15803d",
+}
+
+n_cols4 = len(pivot.columns)
+seg4    = 1.0 / n_cols4
+eps4    = 0.0001
+
+# Codificar z: columna j → rango [j*seg4, j*seg4 + seg4-2*eps4]
+z_enc4 = np.zeros((pivot.shape[0], n_cols4), dtype=float)
+for j in range(n_cols4):
+    col     = pivot.values[:, j]
+    col_max = float(col.max()) or 1.0
+    z_enc4[:, j] = j * seg4 + (col / col_max) * (seg4 - 2 * eps4)
+
+# Colorscale con transiciones bruscas entre columnas
+cs4 = []
 for j, estado in enumerate(pivot.columns):
-    col_vals   = pivot[estado].values
-    col_max    = float(col_vals.max()) or 1.0
-    col_text   = [[f"{v:.1f}%"] for v in col_vals]
-    col_counts = [[int(pivot_count.loc[cat, estado]) if estado in pivot_count.columns else 0]
-                  for cat in pivot.index]
-    cs      = ESTADO_COLORSCALES.get(estado, [[0.0, "#f8fafc"], [1.0, "#6b7280"]])
-    ca_name = f"coloraxis{j+1}"
-    ca_layout[ca_name] = dict(colorscale=cs, cmin=0, cmax=col_max, showscale=False)
-    fig4.add_trace(go.Heatmap(
-        z=[[v] for v in col_vals],
-        x=[estado],
-        y=pivot.index.tolist(),
-        text=col_text,
-        texttemplate="<b>%{text}</b>",
-        textfont=dict(size=12, color="#111827"),
-        coloraxis=ca_name,
-        customdata=col_counts,
-        hovertemplate=(
-            "<b>%{y}</b>  ·  %{x}<br>"
-            "Participación: %{z:.1f}%<br>"
-            "Proyectos: %{customdata}<extra></extra>"
-        ),
-        xgap=4, ygap=3,
-    ))
+    base  = round(j * seg4, 6)
+    light = ESTADO_CLRS_LIGHT.get(estado, "#f8fafc")
+    dark  = ESTADO_CLRS_DARK.get(estado, "#475569")
+    cs4.append([base, light])
+    cs4.append([round(min(1.0, base + seg4 - eps4), 6), dark])
+
+z_text4   = [[f"{pivot.values[i, j]:.1f}%" for j in range(n_cols4)]
+             for i in range(pivot.shape[0])]
+hover_ct4 = [[int(pivot_count.values[i, j]) for j in range(n_cols4)]
+             for i in range(pivot.shape[0])]
+
+fig4 = go.Figure(go.Heatmap(
+    z=z_enc4.tolist(),
+    x=pivot.columns.tolist(),
+    y=pivot.index.tolist(),
+    text=z_text4,
+    texttemplate="<b>%{text}</b>",
+    textfont=dict(size=12, color="#111827"),
+    colorscale=cs4,
+    zmin=0.0, zmax=1.0,
+    showscale=False,
+    customdata=hover_ct4,
+    hovertemplate=(
+        "<b>%{y}</b>  ·  %{x}<br>"
+        "Participación: %{text}<br>"
+        "Proyectos: %{customdata}<extra></extra>"
+    ),
+    xgap=4, ygap=3,
+))
 
 l4 = layout("Composición del Portafolio por Estado de Ejecución (%)",
             xt="Estado de ejecución", yt="Categoría de proyecto", h=380)
 l4["xaxis"]["showgrid"] = False
 l4["yaxis"]["showgrid"] = False
 l4["yaxis"]["zeroline"] = False
-l4.update(ca_layout)
 fig4.update_layout(**l4)
 
 render_q(4,
